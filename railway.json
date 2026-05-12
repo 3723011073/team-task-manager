@@ -2,10 +2,10 @@
   "services": [
     {
       "name": "team-task-manager-backend",
-      "root": "backend",
-      "buildCommand": "npm install",
-      "startCommand": "npm start",
-      "port": 3000
+      "root": ".",
+      "buildCommand": "npm --prefix backend install",
+      "startCommand": "npm --prefix backend start",
+      "port": 5000
     }
   ]
 }
