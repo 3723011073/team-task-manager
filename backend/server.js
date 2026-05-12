@@ -52,24 +52,42 @@ app.use((req, res, next) => {
 });
 
 // Serve static assets from backend/public (no SPA index handling here)
-app.use(express.static(frontendDist, { index: false, maxAge: '1h' }));
-
-// Explicit assets handler to surface clear errors in logs (works on Linux/Windows)
+// Robust asset streaming handler (avoid express.static for predictable logs)
 app.get('/assets/*', (req, res) => {
   const relPath = req.path.replace(/^\//, '');
   const filePath = path.join(frontendDist, relPath);
+
   try {
     fs.accessSync(filePath, fs.constants.R_OK);
   } catch (err) {
     console.error('ASSET_MISSING', filePath, err && err.message);
     return res.status(404).send('Not found');
   }
-  res.sendFile(filePath, (err) => {
-    if (err) {
-      console.error('SEND_FILE_ERROR', filePath, err && err.message);
-      res.status(err.status || 500).send('Server error');
-    }
+
+  const ext = path.extname(filePath).toLowerCase();
+  const contentTypes = {
+    '.js': 'application/javascript; charset=UTF-8',
+    '.css': 'text/css; charset=UTF-8',
+    '.html': 'text/html; charset=UTF-8',
+    '.json': 'application/json',
+    '.png': 'image/png',
+    '.jpg': 'image/jpeg',
+    '.jpeg': 'image/jpeg',
+    '.svg': 'image/svg+xml',
+    '.ico': 'image/x-icon',
+    '.map': 'application/json'
+  };
+
+  const contentType = contentTypes[ext] || 'application/octet-stream';
+  res.setHeader('Content-Type', contentType);
+  res.setHeader('Cache-Control', 'public, max-age=3600');
+
+  const stream = fs.createReadStream(filePath);
+  stream.on('error', (err) => {
+    console.error('STREAM_ERROR', filePath, err && err.message);
+    if (!res.headersSent) res.status(500).send('Server error');
   });
+  stream.pipe(res);
 });
 
 // Health check
