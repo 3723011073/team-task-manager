@@ -1,11 +1,6 @@
 {
-  "services": [
-    {
-      "name": "team-task-manager-backend",
-      "root": ".",
-      "buildCommand": "npm --prefix backend install",
-      "startCommand": "npm --prefix backend start",
-      "port": 5000
-    }
-  ]
+  "$schema": "https://railway.com/railway.schema.json",
+  "deploy": {
+    "startCommand": "npm start"
+  }
 }
