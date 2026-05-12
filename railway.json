@@ -1,11 +1,12 @@
 {
-  "services": [
-    {
-      "name": "team-task-manager-backend",
-      "root": ".",
-      "buildCommand": "npm --prefix backend install",
-      "startCommand": "npm --prefix backend start",
-      "port": 5000
-    }
-  ]
+  "$schema": "https://railway.app/railway.schema.json",
+  "build": {
+    "builder": "NIXPACKS"
+  },
+  "deploy": {
+    "numReplicas": 1,
+    "startCommand": "bash build-and-start.sh",
+    "restartPolicyType": "ON_FAILURE",
+    "restartPolicyMaxRetries": 5
+  }
 }
