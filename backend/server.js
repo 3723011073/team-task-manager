@@ -46,6 +46,24 @@ const frontendDist = path.join(__dirname, 'public');
 
 app.use(express.static(frontendDist, { maxAge: '1h' }));
 
+// Log requests for debugging in deploy logs (helps diagnose 500s on assets)
+app.use((req, res, next) => {
+  console.log(`REQ ${req.method} ${req.url}`);
+  next();
+});
+
+// Explicit asset route (more verbose errors) - helps Railway logs show file errors
+app.get('/assets/*', (req, res, next) => {
+  const relPath = req.path.replace(/^\//, '');
+  const filePath = path.join(frontendDist, relPath);
+  res.sendFile(filePath, (err) => {
+    if (err) {
+      console.error('SEND_FILE_ERROR', req.path, err && err.message);
+      return res.status(err.status || 404).end();
+    }
+  });
+});
+
 // Health check
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
