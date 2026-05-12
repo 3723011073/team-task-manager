@@ -58,7 +58,7 @@ app.use('/api/tasks-advanced', verifyToken, taskAdvancedRoutes);
 // Serve frontend in production from backend
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const frontendDist = path.join(__dirname, '..', 'frontend', 'dist');
+const frontendDist = path.join(__dirname, 'public');
 
 if (process.env.NODE_ENV === 'production') {
   app.use(express.static(frontendDist));
