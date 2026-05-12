@@ -3,6 +3,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import fs from 'fs';
 import { initializeDatabase, setDatabaseOffline } from './db.js';
 import authRoutes from './routes/auth.js';
 import projectRoutes from './routes/projects.js';
@@ -44,22 +45,29 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const frontendDist = path.join(__dirname, 'public');
 
-app.use(express.static(frontendDist, { maxAge: '1h' }));
-
 // Log requests for debugging in deploy logs (helps diagnose 500s on assets)
 app.use((req, res, next) => {
   console.log(`REQ ${req.method} ${req.url}`);
   next();
 });
 
-// Explicit asset route (more verbose errors) - helps Railway logs show file errors
-app.get('/assets/*', (req, res, next) => {
+// Serve static assets from backend/public (no SPA index handling here)
+app.use(express.static(frontendDist, { index: false, maxAge: '1h' }));
+
+// Explicit assets handler to surface clear errors in logs (works on Linux/Windows)
+app.get('/assets/*', (req, res) => {
   const relPath = req.path.replace(/^\//, '');
   const filePath = path.join(frontendDist, relPath);
+  try {
+    fs.accessSync(filePath, fs.constants.R_OK);
+  } catch (err) {
+    console.error('ASSET_MISSING', filePath, err && err.message);
+    return res.status(404).send('Not found');
+  }
   res.sendFile(filePath, (err) => {
     if (err) {
-      console.error('SEND_FILE_ERROR', req.path, err && err.message);
-      return res.status(err.status || 404).end();
+      console.error('SEND_FILE_ERROR', filePath, err && err.message);
+      res.status(err.status || 500).send('Server error');
     }
   });
 });
