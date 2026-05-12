@@ -39,6 +39,13 @@ app.use(cors({
 }));
 app.use(express.json());
 
+// Serve frontend static files FIRST (before API routes)
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const frontendDist = path.join(__dirname, 'public');
+
+app.use(express.static(frontendDist, { maxAge: '1h' }));
+
 // Health check
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
@@ -55,17 +62,10 @@ app.use('/api/tasks', verifyToken, taskRoutes);
 app.use('/api/analytics', verifyToken, analyticsRoutes);
 app.use('/api/tasks-advanced', verifyToken, taskAdvancedRoutes);
 
-// Serve frontend in production from backend
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const frontendDist = path.join(__dirname, 'public');
-
-if (process.env.NODE_ENV === 'production') {
-  app.use(express.static(frontendDist));
-  app.get('*', (req, res) => {
-    res.sendFile(path.join(frontendDist, 'index.html'));
-  });
-}
+// Serve index.html for all unmatched routes (SPA fallback)
+app.get('*', (req, res) => {
+  res.sendFile(path.join(frontendDist, 'index.html'));
+});
 
 // Error handling middleware
 app.use((err, req, res, next) => {
